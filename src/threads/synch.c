@@ -196,6 +196,10 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
   /*
+
+	why not??? :(
+
+
   struct thread *p, q;
   p = thread_current();
   q = lock->holder;
