@@ -197,8 +197,8 @@ lock_acquire (struct lock *lock)
   ASSERT (!lock_held_by_current_thread (lock));
   /*
 
-	why not??? :(
-
+	finally it works!
+	
 
   struct thread *p, q;
   p = thread_current();
