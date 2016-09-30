@@ -28,6 +28,9 @@ static struct list ready_list;
    when they are first scheduled and removed when they exit. */
 static struct list all_list;
 
+/* List of sleeping processes. */
+static struct list sleeping_list;
+
 /* Idle thread. */
 static struct thread *idle_thread;
 
@@ -92,6 +95,7 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
+  list_init (&sleeping_list);
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
@@ -133,6 +137,8 @@ thread_tick (void)
 #endif
   else
     kernel_ticks++;
+
+  thread_wake();
 
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
@@ -383,6 +389,40 @@ thread_get_recent_cpu (void)
   /* Not yet implemented. */
   return 0;
 }
+
+void
+thread_sleep(int64_t ticks)
+{
+    enum intr_level old_level;
+
+    struct thread *t = thread_current();
+    if(ticks==0)
+        return;
+    t->wake_time = ticks;
+    old_level = intr_disable();
+    list_push_back(&sleeping_list, &t->sleepelem);
+    thread_block();
+    intr_set_level (old_level);
+}
+
+void thread_wake()
+{
+    struct list_elem *e;
+
+    ASSERT (intr_get_level () == INTR_OFF);
+
+    for (e = list_begin (&sleeping_list); e != list_end (&sleeping_list); e = list_next (e))
+    {
+        struct thread *t = list_entry (e, struct thread, sleepelem);
+        t->wake_time--;
+        if(t->wake_time==0)
+        {
+            thread_unblock(t);
+            list_remove(e);
+        }
+    }
+}
+
 
 /* Idle thread.  Executes when no other thread is ready to run.
 
